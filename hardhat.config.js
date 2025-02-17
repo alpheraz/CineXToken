@@ -33,12 +33,6 @@ module.exports = {
     },
   },
   networks: {
-    hardhat: {
-      forking: {
-        url: `https://bnb-mainnet.g.alchemy.com/v2/${BNB_ALCHEMY_KEY}`,
-        blockNumber: 46561710,
-      }
-    },
     // Ethereum Sepolia testnet
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${SEPOLIA_ALCHEMY_KEY}`,
