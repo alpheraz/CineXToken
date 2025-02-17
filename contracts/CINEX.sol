@@ -19,8 +19,8 @@ contract CINEX is ERC20, Ownable2Step {
     uint256 public constant antiBotCooldown = 30; // seconds
     address public immutable liquidityWallet;
     address public immutable developmentWallet;
-    uint256 private immutable swapFeeChangeTime;
-    uint256 private immutable removeTransferRestrictionTime;
+    uint256 public immutable swapFeeChangeTime;
+    uint256 public immutable removeTransferRestrictionTime;
 
     /// STORAGE
 
@@ -101,7 +101,7 @@ contract CINEX is ERC20, Ownable2Step {
         if (isPoolWithFee[from]) {
             swapAccount = to;
         } else if (isPoolWithFee[to]) {
-             swapAccount = from;
+            swapAccount = from;
         }
         if (swapAccount != address(0)) {
             if (block.timestamp < accountToLastSwapTime[swapAccount] + antiBotCooldown) revert AntibotCooldown();
@@ -122,7 +122,7 @@ contract CINEX is ERC20, Ownable2Step {
     }
 
     function _getAndDistributeFee(address from, uint256 amount) internal returns(uint256 fee) {
-        fee = amount * getFee() / INITIAL_SUPPLY;
+        fee = amount * getFee() / PCT_DIV;
         uint256 liquidityAmount = block.timestamp >= swapFeeChangeTime ? fee / 2 : fee * 2 / 3;
 
         _transfer(from, liquidityWallet, liquidityAmount);
