@@ -12,26 +12,31 @@ const {
       const [
         owner,
         otherAccount,
-        liquidity,
-        debtManagement,
-        acquisition,
-        development,
-        community,
-        reserve,
         dexPool
       ] = await ethers.getSigners();
+
+      const liquidity = await ethers.getImpersonatedSigner("0x2c0e66A4Fe460eA18d0887B7849fe0395c15f9D3");
+      const debtManagement = await ethers.getImpersonatedSigner("0x58C498f8eFbC7Cc1c7299FE7C94F0A0836BB1034");
+      const acquisition = await ethers.getImpersonatedSigner("0x1331b032029e0a38BFE56d287B4befE64D04D0c6");
+      const development = await ethers.getImpersonatedSigner("0x8b8702A4266F80f270B45C8775F0335C042E48BF");
+      const community = await ethers.getImpersonatedSigner("0x9aD19B438c19cb3d32C23a4b9010f432d3fC94e3");
+      const reserve = await ethers.getImpersonatedSigner("0x80657b98772CB75DDEceF1bB92647FDca3e1a0A1");
+      const marketing = await ethers.getImpersonatedSigner("0x94baA3A22778dfAbeC37Cc379E51B43A255d9c5E");
+      const team = await ethers.getImpersonatedSigner("0xe813B4588c93B0DA5146314C179b67e6c7690894");
+
+      await owner.sendTransaction({to: liquidity.address, value: ethers.parseEther("1")});
+      await owner.sendTransaction({to: debtManagement.address, value: ethers.parseEther("1")});
+      await owner.sendTransaction({to: acquisition.address, value: ethers.parseEther("1")});
+      await owner.sendTransaction({to: development.address, value: ethers.parseEther("1")});
+      await owner.sendTransaction({to: community.address, value: ethers.parseEther("1")});
+      await owner.sendTransaction({to: reserve.address, value: ethers.parseEther("1")});
+      await owner.sendTransaction({to: marketing.address, value: ethers.parseEther("1")});
+      await owner.sendTransaction({to: team.address, value: ethers.parseEther("1")});
 
       const deployTime = await time.latest();
   
       const Token = await ethers.getContractFactory("CINEX");
-      const token = await Token.deploy(
-        liquidity,
-        debtManagement,
-        acquisition,
-        development,
-        community,
-        reserve
-      );
+      const token = await Token.deploy();
   
       return {
         token,
@@ -43,6 +48,8 @@ const {
         development,
         community,
         reserve,
+        marketing,
+        team,
         deployTime,
         dexPool
       };
@@ -50,13 +57,30 @@ const {
   
     describe("Deployment", function () {
       it("Should set the right args", async function () {
-        const { token, liquidity, development, deployTime } = await loadFixture(deployFixture);
+        const {
+          token,
+          liquidity,
+          debtManagement,
+          acquisition,
+          development,
+          community,
+          reserve,
+          marketing,
+          team,
+          deployTime
+        } = await loadFixture(deployFixture);
   
         expect(await token.INITIAL_SUPPLY()).to.be.equal(ethers.parseEther("1000000000"));
         expect(await token.PCT_DIV()).to.be.equal(100000);
         expect(await token.antiBotCooldown()).to.be.equal(30);
         expect(await token.liquidityWallet()).to.be.equal(liquidity.address);
+        expect(await token.debtManagementWallet()).to.be.equal(debtManagement.address);
+        expect(await token.acquisitionWallet()).to.be.equal(acquisition.address);
         expect(await token.developmentWallet()).to.be.equal(development.address);
+        expect(await token.communityWallet()).to.be.equal(community.address);
+        expect(await token.reserveWallet()).to.be.equal(reserve.address);
+        expect(await token.marketingWallet()).to.be.equal(marketing.address);
+        expect(await token.teamWallet()).to.be.equal(team.address);
         expect(await token.swapFeeChangeTime()).to.be.closeTo(deployTime + 60 * 60 * 24 * 365, 1);
         expect(await token.removeTransferRestrictionTime()).to.be.closeTo(deployTime + 60 * 60 * 24 * 60, 1);
       });
@@ -69,82 +93,20 @@ const {
           acquisition,
           development,
           community,
-          reserve
+          reserve,
+          marketing,
+          team
         } = await loadFixture(deployFixture);
   
         expect(await token.totalSupply()).to.be.equal(ethers.parseEther("1000000000") * BigInt(90) / BigInt(100));
         expect(await token.balanceOf(liquidity.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(15) / BigInt(100));
         expect(await token.balanceOf(debtManagement.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(27) / BigInt(100));
         expect(await token.balanceOf(acquisition.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(23) / BigInt(100));
-        expect(await token.balanceOf(development.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(10) / BigInt(100));
-        expect(await token.balanceOf(community.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(10) / BigInt(100));
+        expect(await token.balanceOf(development.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(5) / BigInt(100));
+        expect(await token.balanceOf(community.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(5) / BigInt(100));
         expect(await token.balanceOf(reserve.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(5) / BigInt(100));
-      });
-
-      it("Should revert deploy with zero address", async function () {
-        const {
-          liquidity,
-          debtManagement,
-          acquisition,
-          development,
-          community,
-          reserve
-        } = await loadFixture(deployFixture);
-
-        const Token = await ethers.getContractFactory("CINEX");
-        await expect(Token.deploy(
-          ethers.ZeroAddress,
-          debtManagement,
-          acquisition,
-          development,
-          community,
-          reserve
-        )).to.be.revertedWithCustomError(Token, "ZeroAddress");
-
-        await expect(Token.deploy(
-          liquidity,
-          ethers.ZeroAddress,
-          acquisition,
-          development,
-          community,
-          reserve
-        )).to.be.revertedWithCustomError(Token, "ZeroAddress");
-
-        await expect(Token.deploy(
-          liquidity,
-          debtManagement,
-          ethers.ZeroAddress,
-          development,
-          community,
-          reserve
-        )).to.be.revertedWithCustomError(Token, "ZeroAddress");
-
-        await expect(Token.deploy(
-          liquidity,
-          debtManagement,
-          acquisition,
-          ethers.ZeroAddress,
-          community,
-          reserve
-        )).to.be.revertedWithCustomError(Token, "ZeroAddress");
-
-        await expect(Token.deploy(
-          liquidity,
-          debtManagement,
-          acquisition,
-          development,
-          ethers.ZeroAddress,
-          reserve
-        )).to.be.revertedWithCustomError(Token, "ZeroAddress");
-
-        await expect(Token.deploy(
-          liquidity,
-          debtManagement,
-          acquisition,
-          development,
-          community,
-          ethers.ZeroAddress
-        )).to.be.revertedWithCustomError(Token, "ZeroAddress");
+        expect(await token.balanceOf(marketing.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(5) / BigInt(100));
+        expect(await token.balanceOf(team.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(5) / BigInt(100));
       });
     });
 
@@ -445,6 +407,51 @@ const {
               transferAmount,
               0,
               0
+            ]
+          );
+        });
+
+        it("Should disable antibot cooldown after 60 days", async function () {
+          const { token, liquidity, development, reserve, dexPool } = await loadFixture(deployFixture);
+  
+          await token.setPoolWithFeeList(dexPool.address, true);
+          const transferAmount = ethers.parseEther("10");
+
+          await time.increaseTo(await token.removeTransferRestrictionTime());
+
+          const expectedFee = transferAmount * BigInt(6) / BigInt(100);
+          const expectedLiquidityPart = transferAmount * BigInt(4) / BigInt(100);
+          const expectedDevelopmentPart = transferAmount * BigInt(2) / BigInt(100);
+  
+          await expect(token.connect(reserve).transfer(dexPool.address, transferAmount)).to.be.changeTokenBalances(
+            token,
+            [
+              reserve,
+              dexPool,
+              liquidity,
+              development
+            ],
+            [
+              -transferAmount,
+              transferAmount - expectedFee,
+              expectedLiquidityPart,
+              expectedDevelopmentPart
+            ]
+          );
+
+          await expect(token.connect(reserve).transfer(dexPool.address, transferAmount)).to.be.changeTokenBalances(
+            token,
+            [
+              reserve,
+              dexPool,
+              liquidity,
+              development
+            ],
+            [
+              -transferAmount,
+              transferAmount - expectedFee,
+              expectedLiquidityPart,
+              expectedDevelopmentPart
             ]
           );
         });

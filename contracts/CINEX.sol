@@ -10,17 +10,26 @@ contract CINEX is ERC20, Ownable2Step {
     error ZeroAddress();
     error ExceedsMaxTransferAmount();
     error AntibotCooldown();
+    error MintDisabled();
 
     /// CONSTANTS
+
+    address public constant liquidityWallet = 0x2c0e66A4Fe460eA18d0887B7849fe0395c15f9D3;
+    address public constant debtManagementWallet = 0x58C498f8eFbC7Cc1c7299FE7C94F0A0836BB1034;
+    address public constant acquisitionWallet = 0x1331b032029e0a38BFE56d287B4befE64D04D0c6;
+    address public constant developmentWallet = 0x8b8702A4266F80f270B45C8775F0335C042E48BF;
+    address public constant communityWallet = 0x9aD19B438c19cb3d32C23a4b9010f432d3fC94e3;
+    address public constant reserveWallet = 0x80657b98772CB75DDEceF1bB92647FDca3e1a0A1;
+    address public constant marketingWallet = 0x94baA3A22778dfAbeC37Cc379E51B43A255d9c5E;
+    address public constant teamWallet = 0xe813B4588c93B0DA5146314C179b67e6c7690894;
 
     uint256 public constant INITIAL_SUPPLY = 1_000_000_000 * (10 ** 18); // 1 billion tokens
     /// @notice Divisor for computation (1 bps (basis point) precision: 0.001%).
     uint256 public constant PCT_DIV = 100_000;
     uint256 public constant antiBotCooldown = 30; // seconds
-    address public immutable liquidityWallet;
-    address public immutable developmentWallet;
     uint256 public immutable swapFeeChangeTime;
     uint256 public immutable removeTransferRestrictionTime;
+    bool public immutable isMintDisabled;
 
     /// STORAGE
 
@@ -28,38 +37,25 @@ contract CINEX is ERC20, Ownable2Step {
     mapping(address => bool) public isPoolWithFee;
     /// @notice List of addresses of accounts for which commission is not charged
     mapping(address => bool) public isFeeFree;
-    mapping(address => uint256) public accountToLastSwapTime;
+    mapping(address => uint256) private _accountToLastSwapTime;
 
     event FeeFreeListUpdated(address account, bool add);
     event PoolWithFeeListUpdated(address pool, bool add);
 
-    constructor(
-        address liquidityWallet_,
-        address debtManagementWallet,
-        address acquisitionWallet,
-        address developmentWallet_,
-        address communityWallet,
-        address reserveWallet
-    ) ERC20("CineXToken", "CineX") Ownable(_msgSender()) {
-        if (liquidityWallet_ == address(0)) revert ZeroAddress();
-        if (debtManagementWallet == address(0)) revert ZeroAddress();
-        if (acquisitionWallet == address(0)) revert ZeroAddress();
-        if (developmentWallet_ == address(0)) revert ZeroAddress();
-        if (communityWallet == address(0)) revert ZeroAddress();
-        if (reserveWallet == address(0)) revert ZeroAddress();
-
+    constructor() ERC20("CineXToken", "CineX") Ownable(_msgSender()) {
         _mint(address(this), INITIAL_SUPPLY);
+        isMintDisabled = true;
 
-        _transfer(address(this), liquidityWallet_, INITIAL_SUPPLY * 15 / 100);
+        _transfer(address(this), liquidityWallet, INITIAL_SUPPLY * 15 / 100);
         _transfer(address(this), debtManagementWallet, INITIAL_SUPPLY * 27 / 100);
         _transfer(address(this), acquisitionWallet, INITIAL_SUPPLY * 23 / 100);
-        _transfer(address(this), developmentWallet_, INITIAL_SUPPLY * 10 / 100);
-        _transfer(address(this), communityWallet, INITIAL_SUPPLY * 10 / 100);
+        _transfer(address(this), developmentWallet, INITIAL_SUPPLY * 5 / 100);
+        _transfer(address(this), communityWallet, INITIAL_SUPPLY * 5 / 100);
         _transfer(address(this), reserveWallet, INITIAL_SUPPLY * 5 / 100);
+        _transfer(address(this), marketingWallet, INITIAL_SUPPLY * 5 / 100);
+        _transfer(address(this), teamWallet, INITIAL_SUPPLY * 5 / 100);
         _burn(address(this), INITIAL_SUPPLY * 10 / 100);
 
-        liquidityWallet = liquidityWallet_;
-        developmentWallet = developmentWallet_;
         swapFeeChangeTime = block.timestamp + 60 * 60 * 24 * 365;
         removeTransferRestrictionTime = block.timestamp + 60 * 60 * 24 * 60;
     }
@@ -104,8 +100,10 @@ contract CINEX is ERC20, Ownable2Step {
             swapAccount = from;
         }
         if (swapAccount != address(0)) {
-            if (block.timestamp < accountToLastSwapTime[swapAccount] + antiBotCooldown) revert AntibotCooldown();
-            accountToLastSwapTime[swapAccount] = block.timestamp;
+            if (block.timestamp < removeTransferRestrictionTime) {
+                if (block.timestamp < _accountToLastSwapTime[swapAccount] + antiBotCooldown) revert AntibotCooldown();
+                _accountToLastSwapTime[swapAccount] = block.timestamp;
+            }
             if (!isFeeFree[swapAccount]) {
                 feeAmount = _getAndDistributeFee(from, amount);
             }
@@ -127,5 +125,11 @@ contract CINEX is ERC20, Ownable2Step {
 
         _transfer(from, liquidityWallet, liquidityAmount);
         _transfer(from, developmentWallet, fee - liquidityAmount);
+    }
+
+    /// @dev Disable mint
+    function _update(address from, address to, uint256 value) internal override {
+        if (from == address(0) && isMintDisabled) revert MintDisabled();
+        super._update(from, to, value);
     }
 }
