@@ -5,12 +5,9 @@ require("dotenv").config();
 
 const {
   ETHERSCAN_API_KEY,
-  POLYGONSCAN_API_KEY,
   ACC_PRIVATE_KEY,
   SEPOLIA_ALCHEMY_KEY,
-  AMOY_ALCHEMY_KEY,
   ETHEREUM_ALCHEMY_KEY,
-  BNB_ALCHEMY_KEY
 } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -40,24 +37,6 @@ module.exports = {
       verify: {
         etherscan: {
           apiKey: ETHERSCAN_API_KEY,
-        },
-      },
-    },
-    amoy: {
-      url: `https://rpc-amoy.polygon.technology/`,
-      accounts: [ACC_PRIVATE_KEY],
-      verify: {
-        etherscan: {
-          apiKey: POLYGONSCAN_API_KEY,
-        },
-      },
-    },
-    polygon: {
-      url: `https://polygon-mainnet.g.alchemy.com/v2/${AMOY_ALCHEMY_KEY}`,
-      accounts: [ACC_PRIVATE_KEY],
-      verify: {
-        etherscan: {
-          apiKey: POLYGONSCAN_API_KEY,
         },
       },
     },
