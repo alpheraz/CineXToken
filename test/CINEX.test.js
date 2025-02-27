@@ -4,7 +4,7 @@ const {
   } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
   const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
   const { expect } = require("chai");
-  const { ethers } = require("hardhat");
+  const { ethers, upgrades } = require("hardhat");
   
   describe("CINEX", function () {
     async function deployFixture() {
@@ -36,7 +36,7 @@ const {
       const deployTime = await time.latest();
   
       const Token = await ethers.getContractFactory("CINEX");
-      const token = await Token.deploy();
+      const token = await upgrades.deployProxy(Token, []);
   
       return {
         token,
@@ -81,8 +81,8 @@ const {
         expect(await token.reserveWallet()).to.be.equal(reserve.address);
         expect(await token.marketingWallet()).to.be.equal(marketing.address);
         expect(await token.teamWallet()).to.be.equal(team.address);
-        expect(await token.swapFeeChangeTime()).to.be.closeTo(deployTime + 60 * 60 * 24 * 365, 1);
-        expect(await token.removeTransferRestrictionTime()).to.be.closeTo(deployTime + 60 * 60 * 24 * 60, 1);
+        expect(await token.swapFeeChangeTime()).to.be.closeTo(deployTime + 60 * 60 * 24 * 365, 5);
+        expect(await token.removeTransferRestrictionTime()).to.be.closeTo(deployTime + 60 * 60 * 24 * 60, 5);
       });
 
       it("Should mint and distribute the right amounts", async function () {
@@ -107,6 +107,14 @@ const {
         expect(await token.balanceOf(reserve.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(5) / BigInt(100));
         expect(await token.balanceOf(marketing.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(5) / BigInt(100));
         expect(await token.balanceOf(team.address)).to.be.equal(ethers.parseEther("1000000000") * BigInt(5) / BigInt(100));
+      });
+
+      it("Should revert with repeated initialization", async function () {
+        const {
+          token
+        } = await loadFixture(deployFixture);
+  
+        await expect(token.initialize()).to.be.revertedWithCustomError(token, "InvalidInitialization");
       });
     });
 
@@ -498,6 +506,63 @@ const {
         await token.connect(reserve).approve(owner.address, transferAmount - BigInt(1));
 
         await expect(token.connect(owner).transferFrom(reserve.address, owner.address, transferAmount)).to.be.revertedWithCustomError(token, "ERC20InsufficientAllowance");
+      });
+    });
+
+    describe("Pauseable", function () {
+      it("Should pause", async function () {
+        const { token } = await loadFixture(deployFixture);
+
+        expect(await token.paused()).to.be.false;
+
+        await expect(token.pause()).to.be.emit(token, "Paused");
+
+        expect(await token.paused()).to.be.true;
+      });
+
+      it("Should unpause", async function () {
+        const { token } = await loadFixture(deployFixture);
+        await expect(token.pause()).to.be.emit(token, "Paused");
+
+        expect(await token.paused()).to.be.true;
+
+        await expect(token.unpause()).to.be.emit(token, "Unpaused");
+
+        expect(await token.paused()).to.be.false;
+      });
+
+      it("Should revert pause by not owner", async function () {
+        const { token, otherAccount } = await loadFixture(deployFixture);
+
+        expect(await token.paused()).to.be.false;
+
+        await expect(token.connect(otherAccount).pause()).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
+
+        expect(await token.paused()).to.be.false;
+      });
+
+      it("Should revert unpause by not owner", async function () {
+        const { token, otherAccount } = await loadFixture(deployFixture);
+        await expect(token.pause()).to.be.emit(token, "Paused");
+
+        expect(await token.paused()).to.be.true;
+
+        await expect(token.connect(otherAccount).unpause()).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
+
+        expect(await token.paused()).to.be.true;
+      });
+
+      it("Should revert any transfer on pause", async function () {
+        const { token, owner, liquidity } = await loadFixture(deployFixture);
+        await expect(token.pause()).to.be.emit(token, "Paused");
+
+        const transferAmount = ethers.parseEther("1");
+        await token.connect(liquidity).approve(owner.address, transferAmount);
+
+        expect(await token.paused()).to.be.true;
+
+        await expect(token.connect(liquidity).transfer(owner.address, transferAmount)).to.be.revertedWithCustomError(token, "EnforcedPause");
+        await expect(token.transferFrom(liquidity.address, owner.address, transferAmount)).to.be.revertedWithCustomError(token, "EnforcedPause");
       });
     });
   });
