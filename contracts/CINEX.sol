@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
-contract CINEX is ERC20, Ownable2Step {
+contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable {
     /// ERRORS
 
     error ZeroAddress();
@@ -27,11 +27,12 @@ contract CINEX is ERC20, Ownable2Step {
     /// @notice Divisor for computation (1 bps (basis point) precision: 0.001%).
     uint256 public constant PCT_DIV = 100_000;
     uint256 public constant antiBotCooldown = 30; // seconds
-    uint256 public immutable swapFeeChangeTime;
-    uint256 public immutable removeTransferRestrictionTime;
-    bool public immutable isMintDisabled;
 
     /// STORAGE
+
+    uint256 public swapFeeChangeTime;
+    uint256 public removeTransferRestrictionTime;
+    bool public isMintDisabled;
 
     /// @notice List of addresses of dex pools for which commission is charged
     mapping(address => bool) public isPoolWithFee;
@@ -39,10 +40,21 @@ contract CINEX is ERC20, Ownable2Step {
     mapping(address => bool) public isFeeFree;
     mapping(address => uint256) private _accountToLastSwapTime;
 
+    /// EVENTS
+
     event FeeFreeListUpdated(address account, bool add);
     event PoolWithFeeListUpdated(address pool, bool add);
 
-    constructor() ERC20("CineXToken", "CineX") Ownable(_msgSender()) {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize() external initializer {
+        __ERC20_init("CineXToken", "CineX");
+        __Ownable_init(_msgSender());
+        __Ownable2Step_init();
+
         _mint(address(this), INITIAL_SUPPLY);
         isMintDisabled = true;
 
