@@ -3,8 +3,9 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
-contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable {
+contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgradeable {
     /// ERRORS
 
     error ZeroAddress();
@@ -54,6 +55,7 @@ contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable {
         __ERC20_init("CineXToken", "CineX");
         __Ownable_init(_msgSender());
         __Ownable2Step_init();
+        __Pausable_init();
 
         _mint(address(this), INITIAL_SUPPLY);
         isMintDisabled = true;
@@ -94,6 +96,15 @@ contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable {
         isPoolWithFee[pool] = add;
 
         emit PoolWithFeeListUpdated(pool, add);
+    }
+
+    /// PAUSABLE FUNCTIONS
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     ///------------------ ERC20 ------------------///
@@ -140,7 +151,7 @@ contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable {
     }
 
     /// @dev Disable mint
-    function _update(address from, address to, uint256 value) internal override {
+    function _update(address from, address to, uint256 value) internal override whenNotPaused {
         if (from == address(0) && isMintDisabled) revert MintDisabled();
         super._update(from, to, value);
     }
