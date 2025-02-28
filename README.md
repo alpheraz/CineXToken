@@ -35,3 +35,9 @@ The CINEX contract is a ERC20 token with a swap fees, 30 seconds swap cooldown, 
 - **Input**:
   - `pool`: Pool address.
   - `add`: True if an swap commission is charged for this pool, otherwise false.
+
+### `pause`
+- **Description**: The function blocks the possibility of transfer tokens. Only admin.
+
+### `unpause`
+- **Description**: The function unblocks the possibility of transfer tokens. Only admin.
