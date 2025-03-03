@@ -11,7 +11,7 @@
 npm install
 ```
 6. Create a file called `.env` in the root of the project with the same contents as `.env.example`
-7. Create an account on [Etherscan](https://etherscan.com/). Go to `Account -> API Keys`. Create a new API key. Copy it to `.env` file
+7. Create an account on [Etherscan](https://etherscan.io/). Go to `Account -> API Keys`. Create a new API key. Copy it to `.env` file
   ```
   ETHERSCAN_API_KEY=<your etherscan API key>
   ```
@@ -78,6 +78,12 @@ The CINEX contract is a ERC20 token with a swap fees, 30 seconds swap cooldown, 
 
 ### `setFeeFreeList`
 - **Description**: Sets addresses for which no commission is charged. Only admin.
+- **Input**:
+  - `account`: Address.
+  - `add`: True if the address is exempt from commission, otherwise false.
+
+### `setFeeFreeList`
+- **Description**: Sets addresses for which do not apply restrictions on the transfer of tokens. Only admin.
 - **Input**:
   - `account`: Address.
   - `add`: True if the address is exempt from commission, otherwise false.
