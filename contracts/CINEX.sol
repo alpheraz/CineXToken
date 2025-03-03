@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgradeable {
+contract CINEX is Initializable, ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     /// ERRORS
 
     error ZeroAddress();
@@ -72,6 +74,7 @@ contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgradeable
         __Ownable_init(_msgSender());
         __Ownable2Step_init();
         __Pausable_init();
+        __UUPSUpgradeable_init();
 
         _mint(address(this), INITIAL_SUPPLY);
         isMintDisabled = true;
@@ -180,4 +183,11 @@ contract CINEX is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgradeable
         if (from == address(0) && isMintDisabled) revert MintDisabled();
         super._update(from, to, value);
     }
+
+    ///------------------ UUPS ------------------///
+    /**
+     * @dev Override the function as stated in the documentation for the UUPSUpgradeable contract
+     *   to include access restriction to the upgrade mechanism.
+    */
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }
