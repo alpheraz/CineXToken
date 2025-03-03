@@ -1,0 +1,14 @@
+{
+  "sepolia": {
+    "CINEX": {
+      "proxyAddress": "0x47a13d76c02904f26Ca24FB5f78F2d89056de1a8",
+      "implAddress": "0x145B8683973084ABf26c1B218E511fB7fAD7DE22"
+    }
+  },
+  "ethereum": {
+    "CINEX": {
+      "proxyAddress": "",
+      "implAddress": ""
+    }
+  }
+}
