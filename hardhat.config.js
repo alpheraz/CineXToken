@@ -7,8 +7,7 @@ require("dotenv").config();
 const {
   ETHERSCAN_API_KEY,
   ACC_PRIVATE_KEY,
-  SEPOLIA_ALCHEMY_KEY,
-  ETHEREUM_ALCHEMY_KEY,
+  ALCHEMY_API_KEY,
 } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -33,7 +32,7 @@ module.exports = {
   networks: {
     // Ethereum Sepolia testnet
     sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${SEPOLIA_ALCHEMY_KEY}`,
+      url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
       accounts: [ACC_PRIVATE_KEY],
       verify: {
         etherscan: {
@@ -43,7 +42,7 @@ module.exports = {
     },
     // Ethereum mainnet
     ethereum: {
-      url: `https://eth-mainnet.g.alchemy.com/v2/${ETHEREUM_ALCHEMY_KEY}`,
+      url: `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
       accounts: [ACC_PRIVATE_KEY],
       verify: {
         etherscan: {
