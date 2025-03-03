@@ -150,6 +150,20 @@ const {
           expect(await token.isFeeFree(owner.address)).to.be.false;
         });
 
+        it("Should set the transfer restriction free list", async function () {
+          const { token, owner } = await loadFixture(deployFixture);
+
+          expect(await token.isTransferRestrictionFree(owner.address)).to.be.false;
+
+          await expect(token.setTransferRestrictionFreeList(owner.address, true)).to.be.emit(token, "TransferRestrictionFreeListUpdated").withArgs(owner.address, true);
+
+          expect(await token.isTransferRestrictionFree(owner.address)).to.be.true;
+
+          await expect(token.setTransferRestrictionFreeList(owner.address, false)).to.be.emit(token, "TransferRestrictionFreeListUpdated").withArgs(owner.address, false);
+
+          expect(await token.isTransferRestrictionFree(owner.address)).to.be.false;
+        });
+
         it("Should set the pool with fee list", async function () {
           const { token, dexPool } = await loadFixture(deployFixture);
 
@@ -174,6 +188,16 @@ const {
           expect(await token.isFeeFree(ethers.ZeroAddress)).to.be.false;
         });
 
+        it("Should revert set the transfer restriction free list with zero address", async function () {
+          const { token, owner } = await loadFixture(deployFixture);
+
+          expect(await token.isTransferRestrictionFree(ethers.ZeroAddress)).to.be.false;
+
+          await expect(token.setTransferRestrictionFreeList(ethers.ZeroAddress, true)).to.be.revertedWithCustomError(token, "ZeroAddress");
+
+          expect(await token.isTransferRestrictionFree(ethers.ZeroAddress)).to.be.false;
+        });
+
         it("Should revert set the fee free list by not owner", async function () {
           const { token, owner, otherAccount } = await loadFixture(deployFixture);
 
@@ -182,6 +206,16 @@ const {
           await expect(token.connect(otherAccount).setFeeFreeList(owner.address, true)).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
 
           expect(await token.isFeeFree(owner.address)).to.be.false;
+        });
+
+        it("Should revert set the transfer restriction free list by not owner", async function () {
+          const { token, owner, otherAccount } = await loadFixture(deployFixture);
+
+          expect(await token.isTransferRestrictionFree(owner.address)).to.be.false;
+
+          await expect(token.connect(otherAccount).setTransferRestrictionFreeList(owner.address, true)).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
+
+          expect(await token.isTransferRestrictionFree(owner.address)).to.be.false;
         });
 
         it("Should revert set the pool with fee list with zero address", async function () {
@@ -208,6 +242,8 @@ const {
       describe("Get swap fee", function () {
         it("Should take and distribute swap fee on sell before update fee time", async function () {
           const { token, liquidity, development, reserve, dexPool } = await loadFixture(deployFixture);
+          await token.setFeeFreeList(reserve.address, false);
+          await token.setTransferRestrictionFreeList(reserve.address, false);
   
           await token.setPoolWithFeeList(dexPool.address, true);
           const transferAmount = ethers.parseEther("10");
@@ -235,6 +271,8 @@ const {
 
         it("Should take and distribute swap fee on sell after update fee time", async function () {
           const { token, liquidity, development, reserve, dexPool } = await loadFixture(deployFixture);
+          await token.setFeeFreeList(reserve.address, false);
+          await token.setTransferRestrictionFreeList(reserve.address, false);
   
           await token.setPoolWithFeeList(dexPool.address, true);
           const transferAmount = ethers.parseEther("10");
@@ -264,6 +302,8 @@ const {
 
         it("Should take and distribute swap fee on buy before update fee time", async function () {
           const { token, liquidity, development, reserve, dexPool } = await loadFixture(deployFixture);
+          await token.setFeeFreeList(reserve.address, false);
+          await token.setTransferRestrictionFreeList(reserve.address, false);
   
           const transferAmount = ethers.parseEther("10");
           await token.connect(reserve).transfer(dexPool.address, transferAmount);
@@ -293,6 +333,8 @@ const {
 
         it("Should take and distribute swap fee on buy after update fee time", async function () {
           const { token, liquidity, development, reserve, dexPool } = await loadFixture(deployFixture);
+          await token.setFeeFreeList(reserve.address, false);
+          await token.setTransferRestrictionFreeList(reserve.address, false);
   
           const transferAmount = ethers.parseEther("10");
           await token.connect(reserve).transfer(dexPool.address, transferAmount);
@@ -350,6 +392,8 @@ const {
       describe("Antibot cooldown", function () {
         it("Should revert if less than 30 seconds have passed from the last swap", async function () {
           const { token, liquidity, development, reserve, dexPool } = await loadFixture(deployFixture);
+          await token.setFeeFreeList(reserve.address, false);
+          await token.setTransferRestrictionFreeList(reserve.address, false);
   
           await token.setPoolWithFeeList(dexPool.address, true);
           const transferAmount = ethers.parseEther("10");
@@ -421,6 +465,8 @@ const {
 
         it("Should disable antibot cooldown after 60 days", async function () {
           const { token, liquidity, development, reserve, dexPool } = await loadFixture(deployFixture);
+          await token.setFeeFreeList(reserve.address, false);
+          await token.setTransferRestrictionFreeList(reserve.address, false);
   
           await token.setPoolWithFeeList(dexPool.address, true);
           const transferAmount = ethers.parseEther("10");
@@ -469,6 +515,8 @@ const {
     describe("Transfer limit", function () {
       it("Should revert if exeeds transfer limit", async function () {
         const { token, liquidity, owner } = await loadFixture(deployFixture);
+        await token.setFeeFreeList(liquidity.address, false);
+        await token.setTransferRestrictionFreeList(liquidity.address, false);
 
         const transferAmount = await token.INITIAL_SUPPLY() / BigInt(100) + BigInt(1);
 
@@ -482,6 +530,17 @@ const {
         const transferAmount = await token.INITIAL_SUPPLY() / BigInt(100) + BigInt(1);
 
         await expect(token.connect(liquidity).transfer(owner.address, transferAmount)).to.be.emit(token, "Transfer").withArgs(liquidity.address, owner.address, transferAmount);
+      });
+
+      it("Should disable transfer limit for user from transfer restriction free", async function () {
+        const { token, liquidity, owner } = await loadFixture(deployFixture);
+        await token.setTransferRestrictionFreeList(owner.address, true);
+        
+        const transferLimit = await token.INITIAL_SUPPLY() / BigInt(100);
+        await token.connect(liquidity).transfer(owner.address, transferLimit);
+        await token.connect(liquidity).transfer(owner.address, transferLimit);
+
+        await expect(token.transfer(liquidity.address, transferLimit + BigInt(1))).to.be.emit(token, "Transfer").withArgs(owner.address, liquidity.address, transferLimit + BigInt(1));
       });
     });
 

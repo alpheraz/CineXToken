@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract MockCINEXV2 is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract MockCINEXV2 is Initializable, ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     /// ERRORS
 
     error ZeroAddress();
@@ -45,6 +46,8 @@ contract MockCINEXV2 is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgra
     mapping(address => bool) public isPoolWithFee;
     /// @notice List of addresses of accounts for which commission is not charged
     mapping(address => bool) public isFeeFree;
+    /// @notice List of addresses of accounts for which do not apply restrictions on the transfer of tokens
+    mapping(address => bool) public isTransferRestrictionFree;
     /// @dev Account address => account last swap timestamp
     mapping(address => uint256) private _accountToLastSwapTime;
 
@@ -58,6 +61,14 @@ contract MockCINEXV2 is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgra
      * @param add Add=true, Remove=false
      */
     event FeeFreeListUpdated(address account, bool add);
+
+    /**
+     * @notice Indicates that the TransferRestrictionFreeList was updated
+     * @param account Account added/removed to/from the list
+     * @param add Add=true, Remove=false
+     */
+    event TransferRestrictionFreeListUpdated(address account, bool add);
+
     /**
      * @notice Indicates that the PoolWithFeeList was updated
      * @param pool Pool added/removed to/from the list
@@ -90,6 +101,24 @@ contract MockCINEXV2 is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgra
         _transfer(address(this), teamWallet, INITIAL_SUPPLY * 5 / 100);
         _burn(address(this), INITIAL_SUPPLY * 10 / 100);
 
+        isFeeFree[liquidityWallet] = true;
+        isFeeFree[debtManagementWallet] = true;
+        isFeeFree[acquisitionWallet] = true;
+        isFeeFree[developmentWallet] = true;
+        isFeeFree[communityWallet] = true;
+        isFeeFree[reserveWallet] = true;
+        isFeeFree[marketingWallet] = true;
+        isFeeFree[teamWallet] = true;
+
+        isTransferRestrictionFree[liquidityWallet] = true;
+        isTransferRestrictionFree[debtManagementWallet] = true;
+        isTransferRestrictionFree[acquisitionWallet] = true;
+        isTransferRestrictionFree[developmentWallet] = true;
+        isTransferRestrictionFree[communityWallet] = true;
+        isTransferRestrictionFree[reserveWallet] = true;
+        isTransferRestrictionFree[marketingWallet] = true;
+        isTransferRestrictionFree[teamWallet] = true;
+
         swapFeeChangeTime = block.timestamp + 60 * 60 * 24 * 365;
         removeTransferRestrictionTime = block.timestamp + 60 * 60 * 24 * 60;
     }
@@ -109,6 +138,18 @@ contract MockCINEXV2 is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgra
         isFeeFree[account] = add;
 
         emit FeeFreeListUpdated(account, add);
+    }
+
+    /**
+     * @notice Configure the transfer restriction list. Admin function
+     * @param account Account to add/remove from the fee free list
+     * @param add Add=true, Remove=false
+     */
+    function setTransferRestrictionFreeList(address account, bool add) onlyOwner external {
+        if (account == address(0)) revert ZeroAddress();
+        isTransferRestrictionFree[account] = add;
+
+        emit TransferRestrictionFreeListUpdated(account, add);
     }
 
     /**
@@ -137,7 +178,11 @@ contract MockCINEXV2 is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgra
 
     /// @dev Override ERC20 transferFrom function
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
-        if (block.timestamp < removeTransferRestrictionTime && amount > INITIAL_SUPPLY / 100) revert ExceedsMaxTransferAmount();
+        if (
+            !isTransferRestrictionFree[from] &&
+            block.timestamp < removeTransferRestrictionTime &&
+            amount > INITIAL_SUPPLY / 100
+        ) revert ExceedsMaxTransferAmount();
         address spender = _msgSender();
         if (spender != from) {
             _spendAllowance(from, spender, amount);
@@ -186,5 +231,9 @@ contract MockCINEXV2 is ERC20Upgradeable, Ownable2StepUpgradeable, PausableUpgra
     }
 
     ///------------------ UUPS ------------------///
+    /**
+     * @dev Override the function as stated in the documentation for the UUPSUpgradeable contract
+     *   to include access restriction to the upgrade mechanism.
+    */
     function _authorizeUpgrade(address) internal override onlyOwner {}
 }
