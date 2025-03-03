@@ -1,5 +1,4 @@
 const { ethers, network, upgrades } = require("hardhat");
-const delay = require("delay");
 require("dotenv").config();
 
 // JSON file to keep information about previous deployments

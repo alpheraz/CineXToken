@@ -17,6 +17,7 @@ async function main() {
     const cinex = await upgrades.deployProxy(_contractProto, [], {
         kind: "uups"
     });
+    await cinex.waitForDeployment();
     console.log(`[${contractName}]: Deployment Finished!`);
     OUTPUT_DEPLOY[network.name][contractName].proxyAddress = await cinex.getAddress();
 
