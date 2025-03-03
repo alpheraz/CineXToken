@@ -36,7 +36,7 @@ const {
       const deployTime = await time.latest();
   
       const Token = await ethers.getContractFactory("CINEX");
-      const token = await upgrades.deployProxy(Token, []);
+      const token = await upgrades.deployProxy(Token, [], { kind: "uups" });
   
       return {
         token,
@@ -563,6 +563,31 @@ const {
 
         await expect(token.connect(liquidity).transfer(owner.address, transferAmount)).to.be.revertedWithCustomError(token, "EnforcedPause");
         await expect(token.transferFrom(liquidity.address, owner.address, transferAmount)).to.be.revertedWithCustomError(token, "EnforcedPause");
+      });
+    });
+
+    describe("UUPSUpgradeable", function () {
+      it("Should upgrade", async function () {
+        const { token } = await loadFixture(deployFixture);
+
+        const tokenWithNewInterface = await ethers.getContractAt("MockCINEXV2", await token.getAddress());
+        await expect(tokenWithNewInterface.addedOnUpgade()).to.be.reverted;
+
+        const newImpl = await ethers.getContractFactory("MockCINEXV2");
+
+        newImplAddress = await upgrades.prepareUpgrade(
+          await token.getAddress(),
+          newImpl,
+          {
+              kind: "uups",
+          }
+        );
+        // Actually make an upgrade
+        await upgrades.upgradeProxy(await token.getAddress(), newImpl, {
+            kind: "uups",
+        });
+
+        expect(await tokenWithNewInterface.addedOnUpgade()).to.be.false;
       });
     });
   });
