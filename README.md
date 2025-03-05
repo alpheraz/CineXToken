@@ -4,8 +4,8 @@
 
 1. Install [Git](https://git-scm.com/)
 2. Install [Node.js v20.12.0](https://nodejs.org/en/download/)
-3. Navigate to the directory with the cloned code
-4. Clone repo
+3. Clone repo
+4. Navigate to the directory with the cloned code
 5. Install all required dependencies with
 ```
 npm install
@@ -82,11 +82,11 @@ The CINEX contract is a ERC20 token with a swap fees, 30 seconds swap cooldown, 
   - `account`: Address.
   - `add`: True if the address is exempt from commission, otherwise false.
 
-### `setFeeFreeList`
-- **Description**: Sets addresses for which do not apply restrictions on the transfer of tokens. Only admin.
+### `setTransferRestrictionFreeList`
+- **Description**: Sets addresses for which do not apply restrictions on the maximum transfer amount. Only admin.
 - **Input**:
   - `account`: Address.
-  - `add`: True if the address is exempt from commission, otherwise false.
+  - `add`: True if the address is exempt from restrictions on the maximum transfer amount, otherwise false.
 
 ### `setPoolWithFeeList`
 - **Description**: Sets pool addresses for which swap commission is charged. Only admin.

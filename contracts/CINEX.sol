@@ -17,14 +17,14 @@ contract CINEX is Initializable, ERC20Upgradeable, Ownable2StepUpgradeable, Paus
 
     /// CONSTANTS
 
-    address public constant liquidityWallet = 0xA2d5608d7C0af2931e54E2a1B19f4F5eEc5436B5;
-    address public constant debtManagementWallet = 0xA2d5608d7C0af2931e54E2a1B19f4F5eEc5436B5;
-    address public constant acquisitionWallet = 0xA2d5608d7C0af2931e54E2a1B19f4F5eEc5436B5;
-    address public constant developmentWallet = 0xA2d5608d7C0af2931e54E2a1B19f4F5eEc5436B5;
-    address public constant communityWallet = 0xA2d5608d7C0af2931e54E2a1B19f4F5eEc5436B5;
-    address public constant reserveWallet = 0xA2d5608d7C0af2931e54E2a1B19f4F5eEc5436B5;
-    address public constant marketingWallet = 0xA2d5608d7C0af2931e54E2a1B19f4F5eEc5436B5;
-    address public constant teamWallet = 0xA2d5608d7C0af2931e54E2a1B19f4F5eEc5436B5;
+    address public constant liquidityWallet = 0x2c0e66A4Fe460eA18d0887B7849fe0395c15f9D3;
+    address public constant debtManagementWallet = 0x58C498f8eFbC7Cc1c7299FE7C94F0A0836BB1034;
+    address public constant acquisitionWallet = 0x1331b032029e0a38BFE56d287B4befE64D04D0c6;
+    address public constant developmentWallet = 0x8b8702A4266F80f270B45C8775F0335C042E48BF;
+    address public constant communityWallet = 0x9aD19B438c19cb3d32C23a4b9010f432d3fC94e3;
+    address public constant reserveWallet = 0x80657b98772CB75DDEceF1bB92647FDca3e1a0A1;
+    address public constant marketingWallet = 0x94baA3A22778dfAbeC37Cc379E51B43A255d9c5E;
+    address public constant teamWallet = 0xe813B4588c93B0DA5146314C179b67e6c7690894;
 
     /// @dev 1 billion tokens
     uint256 public constant INITIAL_SUPPLY = 1_000_000_000 * (10 ** 18);
@@ -46,7 +46,7 @@ contract CINEX is Initializable, ERC20Upgradeable, Ownable2StepUpgradeable, Paus
     mapping(address => bool) public isPoolWithFee;
     /// @notice List of addresses of accounts for which commission is not charged
     mapping(address => bool) public isFeeFree;
-    /// @notice List of addresses of accounts for which do not apply restrictions on the transfer of tokens
+    /// @notice List of addresses of accounts for which do not apply restrictions on the maximum transfer amount
     mapping(address => bool) public isTransferRestrictionFree;
     /// @dev Account address => account last swap timestamp
     mapping(address => uint256) private _accountToLastSwapTime;
